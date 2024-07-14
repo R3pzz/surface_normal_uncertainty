@@ -77,8 +77,8 @@ if __name__ == '__main__':
     parser.add_argument("--pretrained", required=True, type=str, help="{nyu, scannet}")
     parser.add_argument('--sampling_ratio', type=float, default=0.4)
     parser.add_argument('--importance_ratio', type=float, default=0.7)
-    parser.add_argument('--input_height', default=480, type=int)
-    parser.add_argument('--input_width', default=640, type=int)
+    parser.add_argument('--input_height', default=640, type=int)
+    parser.add_argument('--input_width', default=480, type=int)
     parser.add_argument('--imgs_dir', default='./examples', type=str)
 
     # read arguments from txt file
