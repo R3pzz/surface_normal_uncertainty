@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def test(model, test_loader, device, results_dir):
+def test(model, test_loader, device, results_dir, produce_concat: bool):
     alpha_max = 60
     kappa_max = 30
 
@@ -41,7 +41,7 @@ def test(model, test_loader, device, results_dir):
             # 1. save input image
             img = utils.unnormalize(img[0, ...])
 
-            target_path = '%s/%s_img.png' % (results_dir, img_name)
+            target_path = '%s/rgb/%s.png' % (results_dir, img_name)
             plt.imsave(target_path, img)
 
             # 2. predicted normal
@@ -49,23 +49,24 @@ def test(model, test_loader, device, results_dir):
             pred_norm_rgb = np.clip(pred_norm_rgb, a_min=0, a_max=255)
             pred_norm_rgb = pred_norm_rgb.astype(np.uint8)                  # (B, H, W, 3)
 
-            target_path = '%s/%s_pred_norm.png' % (results_dir, img_name)
+            target_path = '%s/norm/%s.png' % (results_dir, img_name)
             plt.imsave(target_path, pred_norm_rgb[0, :, :, :])
 
             # 3. predicted kappa (concentration parameter)
-            target_path = '%s/%s_pred_kappa.png' % (results_dir, img_name)
+            target_path = '%s/norm_kappa/%s.png' % (results_dir, img_name)
             plt.imsave(target_path, pred_kappa[0, :, :, 0], vmin=0.0, vmax=kappa_max, cmap='gray')
 
             # 4. predicted uncertainty
             pred_alpha = utils.kappa_to_alpha(pred_kappa)
-            target_path = '%s/%s_pred_alpha.png' % (results_dir, img_name)
+            target_path = '%s/norm_unc/%s.png' % (results_dir, img_name)
             plt.imsave(target_path, pred_alpha[0, :, :, 0], vmin=0.0, vmax=alpha_max, cmap='jet')
 
             # 5. concatenated results
-            image_path_list = ['img', 'pred_norm', 'pred_alpha']
-            image_path_list = ['%s/%s_%s.png' % (results_dir, img_name, i) for i in image_path_list]
-            target_path = '%s/%s_concat.png' % (results_dir, img_name)
-            utils.concat_image(image_path_list, target_path)
+            if produce_concat:
+                image_path_list = ['img', 'pred_norm', 'pred_alpha']
+                image_path_list = ['%s/%s/%s.png' % (results_dir, i, img_name) for i in image_path_list]
+                target_path = '%s/concat/%s.png' % (results_dir, img_name)
+                utils.concat_image(image_path_list, target_path)
 
 
 if __name__ == '__main__':
@@ -80,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_height', default=640, type=int)
     parser.add_argument('--input_width', default=480, type=int)
     parser.add_argument('--imgs_dir', default='./examples', type=str)
+    parser.add_argument('--produce_concat', action='store_true', help='Produce the contcatenated predictions image.')
 
     # read arguments from txt file
     if sys.argv.__len__() == 2 and '.txt' in sys.argv[1]:
@@ -102,5 +104,5 @@ if __name__ == '__main__':
     results_dir = args.imgs_dir + '/results'
     os.makedirs(results_dir, exist_ok=True)
     test_loader = CustomLoader(args, args.imgs_dir).data
-    test(model, test_loader, device, results_dir)
+    test(model, test_loader, device, results_dir, parser.produce_concat)
 
