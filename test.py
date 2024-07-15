@@ -39,10 +39,10 @@ def test(model, test_loader, device, results_dir, produce_concat: bool):
             img_name = data_dict['img_name'][0]
 
             # create the directory structure
-            os.makedirs(os.join(results_dir, 'rgb'), exist_ok=True)
-            os.makedirs(os.join(results_dir, 'norm'), exist_ok=True)
-            os.makedirs(os.join(results_dir, 'norm_unc'), exist_ok=True)
-            os.makedirs(os.join(results_dir, 'norm_kappa'), exist_ok=True)
+            os.makedirs(os.path.join(results_dir, 'rgb'), exist_ok=True)
+            os.makedirs(os.path.join(results_dir, 'norm'), exist_ok=True)
+            os.makedirs(os.path.join(results_dir, 'norm_unc'), exist_ok=True)
+            os.makedirs(os.path.join(results_dir, 'norm_kappa'), exist_ok=True)
 
             # 1. save input image
             img = utils.unnormalize(img[0, ...])
