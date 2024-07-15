@@ -104,5 +104,5 @@ if __name__ == '__main__':
     results_dir = args.imgs_dir + '/results'
     os.makedirs(results_dir, exist_ok=True)
     test_loader = CustomLoader(args, args.imgs_dir).data
-    test(model, test_loader, device, results_dir, parser.produce_concat)
+    test(model, test_loader, device, results_dir, args.produce_concat)
 
