@@ -65,7 +65,7 @@ def test(model, test_loader, device, results_dir, produce_concat: bool):
             # 4. predicted uncertainty
             pred_alpha = utils.kappa_to_alpha(pred_kappa)
             target_path = '%s/norm_unc/%s.png' % (results_dir, img_name)
-            plt.imsave(target_path, pred_alpha[0, :, :, 0], vmin=0.0, vmax=alpha_max, cmap='gray')
+            plt.imsave(target_path, pred_alpha[0, :, :, 0], vmin=0.0, vmax=alpha_max, cmap='jet')
 
             # 5. concatenated results
             if produce_concat:
