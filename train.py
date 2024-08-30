@@ -235,6 +235,7 @@ if __name__ == '__main__':
 
     # directory
     parser.add_argument('--exp_dir', default='./experiments', type=str, help='directory to store experiment results')
+    parser.add_argument('--synfoot_dir', default='/content/synfoot', type=str, help='synfoot dataset directory')
     parser.add_argument('--exp_name', default='exp00_test', type=str, help='experiment name')
     parser.add_argument('--visible_gpus', default='01', type=str, help='gpu to use')
 
