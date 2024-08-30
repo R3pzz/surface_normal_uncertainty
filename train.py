@@ -14,7 +14,13 @@ import torch.utils.data.distributed
 
 import utils.utils as utils
 from utils.losses import compute_loss
+from data.dataloader_synfoot import SynFootLoader
 
+def validate_synfoot_dataset(args) -> bool:
+    dirs = ['rgb', 'normals', 'mask']
+    return all(
+        [os.path.isdir(os.path.join(args.synfoot_dir, d)) for d in dirs]
+    )
 
 def train(model, args, device):
     if device is None:
@@ -24,13 +30,13 @@ def train(model, args, device):
     if should_write:
         print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
-    # dataloader
-    if args.dataset_name == 'nyu':
-        from data.dataloader_nyu import NyuLoader
-        train_loader = NyuLoader(args, 'train').data
-        test_loader = NyuLoader(args, 'test').data
-    else:
-        raise Exception('invalid dataset name')
+    # validate the dataset
+    if not validate_synfoot_dataset(args):
+        raise FileNotFoundError(f'SynFoot dataset not found at {args.synfoot_dir}')
+    
+    synfoot_loader = SynFootLoader(args, args.synfoot_dir)
+    train_loader = synfoot_loader.train_data
+    test_loader = synfoot_loader.test_data
 
     # define losses
     loss_fn = compute_loss(args)
