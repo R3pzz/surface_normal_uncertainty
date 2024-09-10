@@ -125,8 +125,14 @@ class compute_loss(nn.Module):
 
                     loss_pixelwise = - torch.log(torch.square(kappa) + 1) \
                                      + kappa * torch.acos(dot) \
+                                     + kappa * torch.acos(dot) * 0.1 \
                                      + torch.log(1 + torch.exp(-kappa * np.pi))
                     loss = loss + torch.mean(loss_pixelwise)
+
+                elif self.loss_type == 'UG_NLL_synfoot':
+                    # compute the loss
+                    dot = torch.cosine_similarity(pred_norm, gt_norm, dim=1)
+                    
 
                 else:
                     raise Exception

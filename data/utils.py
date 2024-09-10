@@ -37,3 +37,26 @@ def color_augmentation(image, indoors=True):
     image_aug = np.clip(image_aug, 0, 1)
     return image_aug
 
+# samples a noisy normal map on a unit hemisphere facing Z+ with a given mask
+# mask: (W, H)
+# returns: (W, H)
+def sample_noisy_normals(mask: np.ndarray) -> np.ndarray:
+    W, H = mask.shape
+    n_pix = W*H
+    theta = np.random.uniform(0.0, 2.0 * np.pi, n_pix)
+    
+    # Sample z (cosine of polar angle) from [0, 1) for upper hemisphere
+    z = np.random.uniform(0.0, 1.0, n_pix)
+    
+    # Compute the radius in xy-plane
+    r = np.sqrt(1.0 - z**2)
+    
+    # Compute x and y coordinates using theta
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+    
+    # Stack x, y, z to form 3D normal vectors
+    map = np.stack([x, y, z], axis=-1)
+    map = np.reshape(map, newshape=(W, H, 3)) # (W, H, 3)
+    map[mask==0, :] = 0.0 # erase the unmasked pixels 
+    return map

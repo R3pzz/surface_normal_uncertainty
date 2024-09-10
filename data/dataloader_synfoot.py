@@ -15,6 +15,8 @@ import torch.utils.data.distributed
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
+from .utils import sample_noisy_normals
+
 MAX_IMAGES = 180
 
 class SynFootLoader(object):
@@ -39,12 +41,9 @@ class SynFootTrainPreprocessor(Dataset):
     def __init__(self, args, fldr_path):
         super(SynFootTrainPreprocessor, self).__init__()
 
+        # problem here is, synfoot is 
         self.fldr_path = fldr_path
-
-        def get_filenames(fldr_path):
-            filenames = os.listdir(os.path.join(fldr_path, 'rgb'))
-            return random.sample(filenames, k=MAX_IMAGES)
-        self.filenames = get_filenames(fldr_path)
+        self.filenames = os.listdir(os.path.join(fldr_path, 'rgb'))[:MAX_IMAGES]
 
         self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -79,6 +78,7 @@ class SynFootTrainPreprocessor(Dataset):
         img = np.array(rgb_image).astype(np.float32) / 255.0
         norm_gt = np.array(norm_image).astype(np.uint8)
 
+        # mask out valid normals
         norm_valid_mask = np.logical_not(
             np.logical_and(
                 np.logical_and(
@@ -86,7 +86,12 @@ class SynFootTrainPreprocessor(Dataset):
                 norm_gt[:, :, 2] == 0))
         norm_valid_mask = norm_valid_mask[:, :, np.newaxis]
 
-        norm_gt = ((norm_gt.astype(np.float32) / 255.0) * 2.0) - 1.0
+        # fill in blank normal map piexls with noise
+        norm_noise = sample_noisy_normals(norm_valid_mask).astype(np.float32)
+
+        norm_gt = norm_gt.astype(np.float32) / 255.0        
+        norm_gt[~norm_valid_mask] = norm_noise[~norm_valid_mask]
+        norm_gt = norm_gt * 2.0 - 1.0
 
         # to tensors
         img = self.normalize(torch.from_numpy(img).permute(2, 0, 1))            # (3, H, W)
