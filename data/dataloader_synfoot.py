@@ -84,14 +84,20 @@ class SynFootTrainPreprocessor(Dataset):
                 np.logical_and(
                     norm_gt[:, :, 0] == 0, norm_gt[:, :, 1] == 0),
                 norm_gt[:, :, 2] == 0))
-        norm_valid_mask = norm_valid_mask[:, :, np.newaxis] # (H, W, 1)
 
         # sample a noisy normal map
-        norm_noise = sample_noisy_normals(norm_valid_mask).astype(np.float32) # (H, W, 3)
+        norm_noise = sample_noisy_normals(
+            self.input_width,
+            self.input_height
+        ).astype(np.float32) # (H, W, 3)
 
+        # fill in INVALID pixels with noise
         norm_gt = norm_gt.astype(np.float32) / 255.0
-        norm_gt[~norm_valid_mask] = norm_noise[~norm_valid_mask] # fill in INVALID pixels with noise
+        norm_gt[~norm_valid_mask, :] = norm_noise[~norm_valid_mask, :]
         norm_gt = norm_gt * 2.0 - 1.0
+
+        # add a channel dimension
+        norm_valid_mask = norm_valid_mask[:, :, np.newaxis] # (H, W, 1)
 
         # to tensors
         img = self.normalize(torch.from_numpy(img).permute(2, 0, 1))            # (3, H, W)
