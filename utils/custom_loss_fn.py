@@ -32,7 +32,7 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred = F.interpolate(pred, size=[gt_norm.size(2), gt_norm.size(3)], mode='bilinear', align_corners=True)
       pred_norm, pred_kappa = pred[:, :3, :, :], pred[:, 3:, :, :]
 
-      loss += vMF(pred, gt_norm, gt_mask)
+      loss += vMF(pred_norm, pred_kappa, gt_norm, gt_mask)
 
     else:
       sampled_gt_norm = F.grid_sample(gt_norm, coord, mode='nearest', align_corners=True)  # (B, 3, 1, N)
@@ -45,6 +45,6 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred = pred.unsqueeze(-2)
       pred_norm, pred_kappa = pred[:, :3, :, :], pred[:, 3:, :, :]
 
-      loss += vMF(pred, sampled_gt_norm, sampled_gt_mask)
+      loss += vMF(pred_norm, pred_kappa, sampled_gt_norm, sampled_gt_mask)
 
   return loss
