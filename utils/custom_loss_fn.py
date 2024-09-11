@@ -5,6 +5,7 @@ def vMF_masked_loss(pred, gt_norm, gt_mask):
   # extract normals and concentration
   norm = pred[:, :3, :, :]
   kappa = pred[:, 3:, :, :]
+  kappa.unsqueeze(1)
 
   # expand the mask so it covers all 3 channels
   gt_mask = gt_mask.expand(-1, 3, -1, -1)
