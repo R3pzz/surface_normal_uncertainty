@@ -60,3 +60,5 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred = pred.unsqueeze(-2)
 
       loss += vMF_masked_loss(pred, sampled_gt_norm, sampled_gt_mask)
+
+  return loss
