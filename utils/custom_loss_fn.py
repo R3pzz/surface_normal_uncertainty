@@ -1,41 +1,36 @@
 import torch
 import torch.nn.functional as F
 
-def vMF_masked_loss(pred, gt_norm, gt_mask):
-  gt_mask = gt_mask[:, 0, :, :] # (B, H, W)
-  
-  # extract normals and concentration
-  norm = pred[:, :3, :, :] # (B, 3, H, W)
-  kappa = pred[:, -1, :, :] # (B, H, W)
-  
-  # split into bg and foot
-  kappa_foot = kappa[gt_mask]
-  kappa_bg = kappa[~gt_mask]
-  kappa_bg = kappa_bg.detach()
-  
-  # calculate the similarity for both bg and foot
-  dot = torch.cosine_similarity(norm, gt_norm)
-  dot_foot = dot[gt_mask]
-  dot_bg = dot[~gt_mask]
+def vMF(pred_norm, pred_kappa, gt_norm, gt_norm_mask):
+  dot = torch.cosine_similarity(pred_norm, gt_norm, dim=1)
 
-  loss_foot = torch.mean(
-    kappa_foot * torch.acos(dot_foot) \
-      + torch.log((1 + torch.exp(-kappa_foot * torch.pi)) / (kappa_foot**2 + 1))
-  )
+  valid_mask = gt_norm_mask[:, 0, :, :].float() \
+              * (dot.detach() < 0.999).float() \
+              * (dot.detach() > -0.999).float()
+  valid_mask = valid_mask > 0.5
+
+  dot_foot = dot[valid_mask]
+  dot_bg = dot[~valid_mask]
   
-  loss_bg = torch.mean(
-    kappa_bg * torch.acos(dot_bg) \
-      + torch.log((1 + torch.exp(-kappa_bg * torch.pi)) / (kappa_bg**2 + 1))
-  )
-  
-  return loss_foot + loss_bg * 0.1
+  kappa_foot = pred_kappa[:, 0, :, :][valid_mask]
+  kappa_bg = pred_kappa[:, 0, :, :][~valid_mask]
+  kappa_bg.detach()
+
+  loss_foot = - torch.log(kappa_foot) \
+                   - (kappa_foot * (dot_foot - 1)) \
+                   + torch.log(1 - torch.exp(- 2 * kappa_foot))
+
+  loss_bg = - torch.log(kappa_bg) \
+                   - (kappa_bg * (dot_bg - 1)) \
+                   + torch.log(1 - torch.exp(- 2 * kappa_bg))
+  return torch.mean(loss_foot) + torch.mean(loss_bg) * 0.1
 
 def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
   loss = 0.0
   for (pred, coord) in zip(pred_list, coord_list):
     if coord is None:
       pred = F.interpolate(pred, size=[gt_norm.size(2), gt_norm.size(3)], mode='bilinear', align_corners=True)
-      loss += vMF_masked_loss(pred, gt_norm, gt_mask)
+      loss += vMF(pred, gt_norm, gt_mask)
 
     else:
       sampled_gt_norm = F.grid_sample(gt_norm, coord, mode='nearest', align_corners=True)  # (B, 3, 1, N)
@@ -47,6 +42,6 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       
       pred = pred.unsqueeze(-2)
 
-      loss += vMF_masked_loss(pred, sampled_gt_norm, sampled_gt_mask)
+      loss += vMF(pred, sampled_gt_norm, sampled_gt_mask)
 
   return loss

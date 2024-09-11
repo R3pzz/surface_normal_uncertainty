@@ -76,9 +76,9 @@ class SynFootTrainPreprocessor(Dataset):
 
         # to numpy
         img = np.array(rgb_image).astype(np.float32) / 255.0 # (H, W, 3)
-        norm_gt = np.array(norm_image).astype(np.uint8) # (H, W, 3)
 
         # a mask for VALID normals
+        norm_gt = np.array(norm_image).astype(np.uint8) # (H, W, 3)
         norm_valid_mask = np.logical_not(
             np.logical_and(
                 np.logical_and(
@@ -91,7 +91,7 @@ class SynFootTrainPreprocessor(Dataset):
             self.input_height
         ).astype(np.float32) # (H, W, 3)
 
-        # fill in INVALID pixels with noise
+        # sample the whole normal map
         norm_gt = norm_gt.astype(np.float32) / 255.0
         norm_gt[~norm_valid_mask, :] = norm_noise[~norm_valid_mask, :]
         norm_gt = norm_gt * 2.0 - 1.0
