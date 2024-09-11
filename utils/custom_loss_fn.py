@@ -2,45 +2,33 @@ import torch
 import torch.nn.functional as F
 
 def vMF_masked_loss(pred, gt_norm, gt_mask):
+  gt_mask = gt_mask[:, 0, :, :] # (B, H, W)
+  
   # extract normals and concentration
   norm = pred[:, :3, :, :] # (B, 3, H, W)
   kappa = pred[:, 3:, :, :] # (B, H, W)
-  kappa.unsqueeze(1) # (B, 1, H, W)
-  kappa = kappa.expand(-1, 3, -1, -1) # (B, 3, H, W)
-
-  # expand the mask so it covers all 3 channels
-  gt_mask = gt_mask.expand(-1, 3, -1, -1) # (B, 3, H, W)
   
-  # split bg and foot predictions
-  bg_norm = norm[~gt_mask] # (N)
-  foot_norm = norm[gt_mask] # (N)
+  # split into bg and foot
+  kappa_foot = kappa[gt_mask]
+  kappa_bg = kappa[~gt_mask]
+  kappa_bg = kappa_bg.detach()
   
-  bg_kappa = kappa[~gt_mask] # (N)
-  foot_kappa = kappa[gt_mask] # (N)
+  # calculate the similarity for both bg and foot
+  dot = torch.cosine_similarity(norm, gt_norm)
+  dot_foot = dot[gt_mask]
+  dot_bg = dot[~gt_mask]
 
-  # detach kappa for bg so we don't optimize over shit pixels
-  bg_kappa = bg_kappa.detach()
-
-  # split bg and foot gt normals
-  gt_bg_norm = gt_norm[~gt_mask] # (N) # random noise sampled during the data processing stage
-  gt_foot_norm = gt_norm[gt_mask] # (N) # ground truth foot normal map
-
-  # loss fn:
-  # foot_kappa * acos(foot_norm * gt_foot_norm) + log((1 + exp(-foot_kappa * PI)) / (1 + square(foot_kappa)))
-
-  foot_dev = torch.clamp(foot_norm * gt_foot_norm, min=-1.0, max=1.0) # (N)
-  foot_loss = torch.mean(
-    foot_kappa * torch.acos(foot_dev) \
-      + torch.log((1 + torch.exp(-foot_kappa * torch.pi)) / (foot_kappa**2 + 1))
-  )
-
-  bg_dev = torch.clamp(bg_norm * gt_bg_norm, min=-1.0, max=1.0) # (N)
-  bg_loss = torch.mean(
-    bg_kappa * torch.acos(bg_dev) \
-      + torch.log((1 + torch.exp(-bg_kappa * torch.pi)) / (bg_kappa**2 + 1))
+  loss_foot = torch.mean(
+    kappa_foot * torch.acos(dot_foot) \
+      + torch.log((1 + torch.exp(-kappa_foot * torch.pi)) / (kappa_foot**2 + 1))
   )
   
-  return foot_loss + bg_loss * .1
+  loss_bg = torch.mean(
+    kappa_bg * torch.acos(dot_bg) \
+      + torch.log((1 + torch.exp(-kappa_bg * torch.pi)) / (kappa_bg**2 + 1))
+  )
+  
+  return loss_foot + loss_bg * 0.1
 
 def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
   loss = 0.0

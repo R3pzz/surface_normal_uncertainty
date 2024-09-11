@@ -17,7 +17,7 @@ from torchvision import transforms
 
 from .utils import sample_noisy_normals
 
-MAX_IMAGES = 180
+MAX_IMAGES = 1000
 
 class SynFootLoader(object):
     def __init__(self, args, fldr_path):
