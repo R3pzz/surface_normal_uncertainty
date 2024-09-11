@@ -5,13 +5,16 @@ def vMF_masked_loss(pred, gt_norm, gt_mask):
   # extract normals and concentration
   norm = pred[:, :3, :, :]
   kappa = pred[:, 3:, :, :]
+
+  # expand the mask so it covers all 3 channels
+  gt_mask = gt_mask.expand(-1, 3, -1, -1)
   
   # split bg and foot predictions
   bg_norm = norm[~gt_mask]
   foot_norm = norm[gt_mask]
   
-  bg_kappa = kappa[~gt_mask]
-  foot_kappa = kappa[gt_mask]
+  bg_kappa = kappa[~gt_mask[:, 0, :, :]]
+  foot_kappa = kappa[gt_mask[:, 0, :, :]]
 
   # detach kappa for bg so we don't optimize over shit pixels
   bg_kappa = bg_kappa.detach()
