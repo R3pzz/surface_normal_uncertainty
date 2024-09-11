@@ -1,5 +1,5 @@
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 
 def vMF_masked_loss(pred, gt_norm, gt_mask):
   # extract normals and concentration
