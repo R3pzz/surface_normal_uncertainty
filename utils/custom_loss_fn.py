@@ -6,7 +6,7 @@ def vMF_masked_loss(pred, gt_norm, gt_mask):
   
   # extract normals and concentration
   norm = pred[:, :3, :, :] # (B, 3, H, W)
-  kappa = pred[:, 3:, :, :] # (B, H, W)
+  kappa = pred[:, -1, :, :] # (B, H, W)
   
   # split into bg and foot
   kappa_foot = kappa[gt_mask]
