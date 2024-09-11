@@ -38,10 +38,10 @@ def color_augmentation(image, indoors=True):
     return image_aug
 
 # samples a noisy normal map on a unit hemisphere facing Z+ with a given mask
-# mask: (W, H)
-# returns: (W, H)
+# mask: (W, H, 1)
+# returns: (W, H, 3)
 def sample_noisy_normals(mask: np.ndarray) -> np.ndarray:
-    W, H = mask.shape
+    W, H, _ = mask.shape
     n_pix = W*H
     theta = np.random.uniform(0.0, 2.0 * np.pi, n_pix)
     

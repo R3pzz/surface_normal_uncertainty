@@ -75,22 +75,22 @@ class SynFootTrainPreprocessor(Dataset):
         )
 
         # to numpy
-        img = np.array(rgb_image).astype(np.float32) / 255.0
-        norm_gt = np.array(norm_image).astype(np.uint8)
+        img = np.array(rgb_image).astype(np.float32) / 255.0 # (H, W, 3)
+        norm_gt = np.array(norm_image).astype(np.uint8) # (H, W, 3)
 
-        # mask out valid normals
+        # a mask for VALID normals
         norm_valid_mask = np.logical_not(
             np.logical_and(
                 np.logical_and(
                     norm_gt[:, :, 0] == 0, norm_gt[:, :, 1] == 0),
                 norm_gt[:, :, 2] == 0))
-        norm_valid_mask = norm_valid_mask[:, :, np.newaxis]
+        norm_valid_mask = norm_valid_mask[:, :, np.newaxis] # (H, W, 1)
 
-        # fill in blank normal map piexls with noise
-        norm_noise = sample_noisy_normals(norm_valid_mask).astype(np.float32)
+        # sample a noisy normal map
+        norm_noise = sample_noisy_normals(norm_valid_mask).astype(np.float32) # (H, W, 3)
 
-        norm_gt = norm_gt.astype(np.float32) / 255.0        
-        norm_gt[~norm_valid_mask] = norm_noise[~norm_valid_mask]
+        norm_gt = norm_gt.astype(np.float32) / 255.0
+        norm_gt[~norm_valid_mask] = norm_noise[~norm_valid_mask] # fill in INVALID pixels with noise
         norm_gt = norm_gt * 2.0 - 1.0
 
         # to tensors
