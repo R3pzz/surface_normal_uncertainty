@@ -18,7 +18,7 @@ from utils.custom_loss_fn import pixelwise_loss
 from data.dataloader_synfoot import SynFootLoader
 
 def validate_synfoot_dataset(args) -> bool:
-    dirs = ['rgb', 'normals', 'mask']
+    dirs = ['rgb', 'normals']
     return all(
         [os.path.isdir(os.path.join(args.synfoot_dir, d)) for d in dirs]
     )
