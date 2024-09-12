@@ -2,16 +2,16 @@ import torch
 import torch.nn.functional as F
 
 def UG_angular_vMF_loss(pred_norm, pred_kappa, gt_norm):
-  # pred_norm: (B, 3, H, W)
-  # gt_norm:(B, 3, H, W)
-  # pred_kappa: (B, H, W)
+  # pred_norm: (B*3*W*H)
+  # gt_norm:(B*3*W*H)
+  # pred_kappa: (B*W*H)
 
   # compute the angular similarity between gt and prediction
-  dot = torch.sum(pred_norm * gt_norm, dim=1)  # (B, H, W)
+  dot = torch.sum(pred_norm * gt_norm)  # (B*H*W)
   dot = torch.clamp(dot, min=-1.0, max=1.0)
 
   # compute the resulting angle
-  ang = torch.acos(dot)  # (B, H, W)
+  ang = torch.acos(dot)  # (B*H*W)
 
   # compute the losses (angle and concentration)
   kappa_loss = torch.log((1 + torch.exp(-pred_kappa * torch.pi)) / (pred_kappa**2 + 1))
