@@ -56,14 +56,14 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred_norm, pred_kappa = pred[:, :3, :], pred[:, 3:, :]
 
       # mask out the background pixels
-      fg_norm = pred_norm[gt_mask.expand(-1, 3, -1)]
-      fg_kappa = pred_kappa[gt_mask]
+      fg_norm = pred_norm[sampled_gt_mask.expand(-1, 3, -1)]
+      fg_kappa = pred_kappa[sampled_gt_mask]
 
       # calculate the foreground loss
-      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, gt_norm[gt_mask.expand(-1, 3, -1)])
+      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, gt_norm[sampled_gt_mask.expand(-1, 3, -1)])
 
       # mask out the foreground pixels
-      mask_inv = torch.logical_not(gt_mask)
+      mask_inv = torch.logical_not(sampled_gt_mask)
       bg_norm = pred_norm[mask_inv.expand(-1, 3, -1)]
       bg_kappa = pred_kappa[mask_inv]
 
