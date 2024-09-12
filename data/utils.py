@@ -41,19 +41,20 @@ def color_augmentation(image, indoors=True):
 # returns: (H, W, 3)
 def sample_noisy_normals(W, H) -> np.ndarray:
     n_pix = W*H
+    
+    # compute the spherical coordinates
     theta = np.random.uniform(0.0, 2.0 * np.pi, n_pix)
+    phi = np.random.uniform(0.0, 1.0, n_pix)
     
-    # Sample z (cosine of polar angle) from [0, 1) for upper hemisphere
-    z = np.random.uniform(0.0, 1.0, n_pix)
+    # compute the radius in xy-plane
+    r = np.sqrt(1.0 - phi**2)
     
-    # Compute the radius in xy-plane
-    r = np.sqrt(1.0 - z**2)
-    
-    # Compute x and y coordinates using theta
+    # compute x and y coordinates using theta
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     
-    # Stack x, y, z to form 3D normal vectors
-    map = np.stack([x, y, z], axis=-1)
+    map = np.stack([x, y, phi], axis=-1)
     map = np.reshape(map, newshape=(H, W, 3)) # (W, H, 3)
-    return map
+
+    # remap from [0.0, 1.0] to [-1.0, 1.0]
+    return map * 2.0 - 1.0

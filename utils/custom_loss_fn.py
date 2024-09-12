@@ -1,29 +1,23 @@
 import torch
 import torch.nn.functional as F
 
-def vMF(pred_norm, pred_kappa, gt_norm, gt_norm_mask):
-  dot = torch.cosine_similarity(pred_norm, gt_norm, dim=1)
+def UG_angular_vMF_loss(pred_norm, pred_kappa, gt_norm):
+  # pred_norm: (B, 3, H, W)
+  # gt_norm:(B, 3, H, W)
+  # pred_kappa: (B, H, W)
 
-  valid_mask = gt_norm_mask[:, 0, :, :].float() \
-              * (dot.detach() < 0.999).float() \
-              * (dot.detach() > -0.999).float()
-  valid_mask = valid_mask > 0.5
+  # compute the angular similarity between gt and prediction
+  dot = torch.sum(pred_norm * gt_norm, dim=1)  # (B, H, W)
+  dot = torch.clamp(dot, min=-1.0, max=1.0)
 
-  dot_foot = dot[valid_mask]
-  dot_bg = dot[~valid_mask]
-  
-  kappa_foot = pred_kappa[:, 0, :, :][valid_mask]
-  kappa_bg = pred_kappa[:, 0, :, :][~valid_mask]
-  kappa_bg.detach()
+  # compute the resulting angle
+  ang = torch.acos(dot)  # (B, H, W)
 
-  loss_foot = - torch.log(kappa_foot) \
-                   - (kappa_foot * (dot_foot - 1)) \
-                   + torch.log(1 - torch.exp(- 2 * kappa_foot))
+  # compute the losses (angle and concentration)
+  kappa_loss = torch.log((1 + torch.exp(-pred_kappa * torch.pi)) / (pred_kappa**2 + 1))
+  ang_loss = pred_kappa * ang
 
-  loss_bg = - torch.log(kappa_bg) \
-                   - (kappa_bg * (dot_bg - 1)) \
-                   + torch.log(1 - torch.exp(- 2 * kappa_bg))
-  return torch.mean(loss_foot) + torch.mean(loss_bg) * 0.1
+  return torch.mean(kappa_loss) + torch.mean(ang_loss)
 
 def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
   loss = 0.0
@@ -32,7 +26,25 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred = F.interpolate(pred, size=[gt_norm.size(2), gt_norm.size(3)], mode='bilinear', align_corners=True)
       pred_norm, pred_kappa = pred[:, :3, :, :], pred[:, 3:, :, :]
 
-      loss += vMF(pred_norm, pred_kappa, gt_norm, gt_mask)
+      # mask out the background pixels
+      fg_norm = pred_norm[gt_mask.expand(-1, 3, -1, -1)]
+      fg_kappa = pred_kappa[gt_mask]
+
+      # calculate the foreground loss
+      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, gt_norm)
+
+      # mask out the foreground pixels
+      mask_inv = torch.logical_not(gt_mask)
+      bg_norm = pred_norm[mask_inv.expand(-1, 3, -1, -1)]
+      bg_kappa = pred_kappa[mask_inv]
+
+      # detach the background normals to not fuck up our predictions
+      bg_norm = bg_norm.detach()
+
+      # calculate the foreground loss
+      bg_loss = UG_angular_vMF_loss(bg_norm, bg_kappa, gt_norm)
+      
+      loss = loss + fg_loss + bg_loss * 0.1
 
     else:
       sampled_gt_norm = F.grid_sample(gt_norm, coord, mode='nearest', align_corners=True)  # (B, 3, 1, N)
@@ -45,6 +57,24 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       pred = pred.unsqueeze(-2)
       pred_norm, pred_kappa = pred[:, :3, :, :], pred[:, 3:, :, :]
 
-      loss += vMF(pred_norm, pred_kappa, sampled_gt_norm, sampled_gt_mask)
+      # mask out the background pixels
+      fg_norm = pred_norm[gt_mask.expand(-1, 3, -1, -1)]
+      fg_kappa = pred_kappa[gt_mask]
+
+      # calculate the foreground loss
+      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, gt_norm)
+
+      # mask out the foreground pixels
+      mask_inv = torch.logical_not(gt_mask)
+      bg_norm = pred_norm[mask_inv.expand(-1, 3, -1, -1)]
+      bg_kappa = pred_kappa[mask_inv]
+
+      # detach the background normals to not fuck up our predictions
+      bg_norm = bg_norm.detach()
+
+      # calculate the foreground loss
+      bg_loss = UG_angular_vMF_loss(bg_norm, bg_kappa, gt_norm)
+      
+      loss = loss + fg_loss + bg_loss * 0.1
 
   return loss

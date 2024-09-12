@@ -84,19 +84,15 @@ class SynFootTrainPreprocessor(Dataset):
                 np.logical_and(
                     norm_gt[:, :, 0] == 0, norm_gt[:, :, 1] == 0),
                 norm_gt[:, :, 2] == 0))
+    
+        # convert from [0, 255] to [-1.0, 1.0]
+        norm_gt = (norm_gt.astype(np.float32) / 255.0) * 2.0 - 1.0
 
-        # sample a noisy normal map
-        norm_noise = sample_noisy_normals(
-            self.input_width,
-            self.input_height
-        ).astype(np.float32) # (H, W, 3)
+        # sample some noisy lables and fill in the background
+        noisy_lables = sample_noisy_normals(self.input_width, self.input_height) # (H, W, 3)        
+        bg_mask = np.logical_not(norm_valid_mask)
+        norm_gt[bg_mask, :] = noisy_lables[bg_mask, :]
 
-        # sample the whole normal map
-        norm_gt = norm_gt.astype(np.float32) / 255.0
-        norm_gt[~norm_valid_mask, :] = norm_noise[~norm_valid_mask, :]
-        norm_gt = norm_gt * 2.0 - 1.0
-
-        # add a channel dimension
         norm_valid_mask = norm_valid_mask[:, :, np.newaxis] # (H, W, 1)
 
         # to tensors
