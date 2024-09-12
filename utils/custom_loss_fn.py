@@ -7,7 +7,7 @@ def UG_angular_vMF_loss(pred_norm, pred_kappa, gt_norm):
   # pred_kappa: (B*W*H)
 
   # compute the angular similarity between gt and prediction
-  dot = torch.sum(pred_norm * gt_norm)  # (B*H*W)
+  dot = torch.cosine_similarity(pred_norm, gt_norm)  # (B*H*W)
   dot = torch.clamp(dot, min=-1.0, max=1.0)
 
   # compute the resulting angle

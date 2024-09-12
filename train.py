@@ -13,7 +13,7 @@ import torch.optim as optim
 import torch.utils.data.distributed
 
 import utils.utils as utils
-#from utils.losses import compute_loss
+from utils.losses import compute_loss
 from utils.custom_loss_fn import pixelwise_loss
 from data.dataloader_synfoot import SynFootLoader
 
@@ -40,7 +40,7 @@ def train(model, args, device):
     test_loader = synfoot_loader.test_data
 
     # define losses
-    loss_fn = pixelwise_loss
+    loss_fn = compute_loss(args)
 
     # optimizer
     if args.same_lr:
