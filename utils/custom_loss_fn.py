@@ -60,7 +60,7 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       fg_kappa = pred_kappa[sampled_gt_mask]
 
       # calculate the foreground loss
-      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, gt_norm[sampled_gt_mask.expand(-1, 3, -1)])
+      fg_loss = UG_angular_vMF_loss(fg_norm, fg_kappa, sampled_gt_norm[sampled_gt_mask.expand(-1, 3, -1)])
 
       # mask out the foreground pixels
       mask_inv = torch.logical_not(sampled_gt_mask)
@@ -71,7 +71,7 @@ def pixelwise_loss(pred_list, coord_list, gt_norm, gt_mask):
       bg_norm = bg_norm.detach()
 
       # calculate the foreground loss
-      bg_loss = UG_angular_vMF_loss(bg_norm, bg_kappa, gt_norm[mask_inv.expand(-1, 3, -1)])
+      bg_loss = UG_angular_vMF_loss(bg_norm, bg_kappa, sampled_gt_norm[mask_inv.expand(-1, 3, -1)])
       
       loss = loss + fg_loss + bg_loss * 0.1
 
