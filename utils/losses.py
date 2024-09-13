@@ -115,17 +115,22 @@ class compute_loss(nn.Module):
                 elif self.loss_type == 'UG_NLL_ours':
                     dot = torch.cosine_similarity(pred_norm, gt_norm, dim=1)
 
-                    valid_mask = gt_norm_mask[:, 0, :, :].float() \
+                    foreground_mask = gt_norm_mask[:, 0, :, :].float() \
                                 * (dot.detach() < 0.999).float() \
                                 * (dot.detach() > -0.999).float()
-                    valid_mask = valid_mask > 0.5
+                    foreground_mask = foreground_mask > 0.5
 
-                    dot_fg = dot[valid_mask]
-                    dot_bg = dot[~valid_mask]
+                    background_mask = torch.logical_not(gt_norm_mask)[:, 0, :, :].float() \
+                                * (dot.detach() < 0.999).float() \
+                                * (dot.detach() > -0.999).float()
+                    background_mask = background_mask > 0.5
+
+                    dot_fg = dot[foreground_mask]
+                    dot_bg = dot[background_mask]
                     dot_bg = dot_bg.detach()
 
-                    kappa_fg = pred_kappa[:, 0, :, :][valid_mask]
-                    kappa_bg = pred_kappa[:, 0, :, :][~valid_mask]
+                    kappa_fg = pred_kappa[:, 0, :, :][foreground_mask]
+                    kappa_bg = pred_kappa[:, 0, :, :][background_mask]
 
                     loss_fg = - torch.log(torch.square(kappa_fg) + 1) \
                                      + kappa_fg * torch.acos(dot_fg) \
@@ -169,17 +174,22 @@ class compute_loss(nn.Module):
                 elif self.loss_type == 'UG_NLL_ours':
                     dot = torch.cosine_similarity(pred_norm, gt_norm_, dim=1)  # (B, N)
 
-                    valid_mask = gt_norm_mask_[:, 0, :].float() \
+                    foreground_mask = gt_norm_mask_[:, 0, :].float() \
                                  * (dot.detach() < 0.999).float() \
                                  * (dot.detach() > -0.999).float()
-                    valid_mask = valid_mask > 0.5
+                    foreground_mask = foreground_mask > 0.5
 
-                    dot_fg = dot[valid_mask]
-                    dot_bg = dot[~valid_mask]
+                    background_mask = torch.logical_not(gt_norm_mask_)[:, 0, :].float() \
+                                * (dot.detach() < 0.999).float() \
+                                * (dot.detach() > -0.999).float()
+                    background_mask = background_mask > 0.5
+
+                    dot_fg = dot[foreground_mask]
+                    dot_bg = dot[background_mask]
                     dot_bg = dot_bg.detach()
 
-                    kappa_fg = pred_kappa[:, 0, :][valid_mask]
-                    kappa_bg = pred_kappa[:, 0, :][~valid_mask]
+                    kappa_fg = pred_kappa[:, 0, :][foreground_mask]
+                    kappa_bg = pred_kappa[:, 0, :][background_mask]
 
                     loss_fg = - torch.log(torch.square(kappa_fg) + 1) \
                                      + kappa_fg * torch.acos(dot_fg) \
