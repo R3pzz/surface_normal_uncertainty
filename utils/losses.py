@@ -132,13 +132,11 @@ class compute_loss(nn.Module):
                     kappa_fg = pred_kappa[:, 0, :, :][foreground_mask]
                     kappa_bg = pred_kappa[:, 0, :, :][background_mask]
 
-                    loss_fg = - torch.log(torch.square(kappa_fg) + 1) \
-                                     + kappa_fg * torch.acos(dot_fg) \
-                                     + torch.log(1 + torch.exp(-kappa_fg * np.pi))
+                    loss_fg = kappa_fg * torch.acos(dot_fg) \
+                                     + torch.log((1.0 + torch.exp(-kappa_fg * np.pi)) / (torch.square(kappa_fg) + 1.0))
 
-                    loss_bg = - torch.log(torch.square(kappa_bg) + 1) \
-                                     + kappa_bg * torch.acos(dot_bg) \
-                                     + torch.log(1 + torch.exp(-kappa_bg * np.pi))
+                    loss_bg = kappa_bg * torch.acos(dot_bg) \
+                                     + torch.log(1 + torch.exp(-kappa_bg * np.pi) / (torch.square(kappa_bg) + 1.0))
                     
                     loss = loss + torch.mean(loss_fg) + torch.mean(loss_bg) * 0.1
 
@@ -191,13 +189,11 @@ class compute_loss(nn.Module):
                     kappa_fg = pred_kappa[:, 0, :][foreground_mask]
                     kappa_bg = pred_kappa[:, 0, :][background_mask]
 
-                    loss_fg = - torch.log(torch.square(kappa_fg) + 1) \
-                                     + kappa_fg * torch.acos(dot_fg) \
-                                     + torch.log(1 + torch.exp(-kappa_fg * np.pi))
+                    loss_fg = kappa_fg * torch.acos(dot_fg) \
+                                     + torch.log((1.0 + torch.exp(-kappa_fg * np.pi)) / (torch.square(kappa_fg) + 1.0))
 
-                    loss_bg = - torch.log(torch.square(kappa_bg) + 1) \
-                                     + kappa_bg * torch.acos(dot_bg) \
-                                     + torch.log(1 + torch.exp(-kappa_bg * np.pi))
+                    loss_bg = kappa_bg * torch.acos(dot_bg) \
+                                     + torch.log(1 + torch.exp(-kappa_bg * np.pi) / (torch.square(kappa_bg) + 1.0))
                     
                     loss = loss + torch.mean(loss_fg) + torch.mean(loss_bg) * 0.1
 
