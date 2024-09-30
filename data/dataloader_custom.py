@@ -1,6 +1,6 @@
 import glob
 import numpy as np
-from PIL import Image
+import cv2
 
 import torch
 import torch.utils.data.distributed
@@ -30,13 +30,20 @@ class CustomLoadPreprocess(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.filenames[idx]
-        img = Image.open(img_path).convert("RGB").resize(size=(self.input_width, self.input_height), resample=Image.BILINEAR)
-        img = np.array(img).astype(np.float32) / 255.0
-        img = torch.from_numpy(img).permute(2, 0, 1)
-        img = self.normalize(img)
+
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (self.input_width, self.input_height), interpolation=cv2.INTER_LINEAR)
+        img = np.array(img)
 
         img_name = img_path.split('/')[-1]
         img_name = img_name.split('.png')[0] if '.png' in img_name else img_name.split('.jpg')[0]
+
+        cv2.imwrite(f'/content/test_images/{img_name}.png', img)
+
+        img = img.astype(np.float32) / 255.0
+        img = torch.from_numpy(img).permute(2, 0, 1)
+        img = self.normalize(img)
 
         sample = {'img': img,
                   'img_name': img_name}
